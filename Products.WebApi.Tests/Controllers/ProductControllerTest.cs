@@ -15,7 +15,7 @@ using Products.WebApi.Models;
 namespace Products.WebApi.Tests.Controllers
 {
     [TestClass]
-    public class HomeControllerTest
+    public class ProductControllerTest
     {
         private const int Id = 1;
 
