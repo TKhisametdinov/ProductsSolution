@@ -1,0 +1,88 @@
+﻿<Page
+    x:Name="pageRoot"
+    x:Class="Products.ClientApp.Products"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="using:Products.ClientApp.Converters"
+    mc:Ignorable="d"
+    DataContext="{Binding ProductViewModel, Source={StaticResource viewModelLocator}}">
+
+    <Page.Resources>
+         <!--TODO: Delete this line if the key AppName is declared in App.xaml--> 
+        <x:String x:Key="AppName">Products</x:String>
+         <!--Collection of items displayed by this page--> 
+        <CollectionViewSource
+            x:Name="itemsViewSource"
+            Source="{Binding ProductsAsync.Result}"
+            />
+        <converters:BoolToVisConverter x:Key="BoolToVisConverter" />
+        <converters:BytesToImageConverter x:Key="BytesToImageConverter" />
+    </Page.Resources>
+
+    <!--
+        This grid acts as a root panel for the page that defines two rows:
+        * Row 0 contains the back button and page title
+        * Row 1 contains the rest of the page layout
+    -->
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.ChildrenTransitions>
+            <TransitionCollection>
+                <EntranceThemeTransition/>
+            </TransitionCollection>
+        </Grid.ChildrenTransitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="140"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Back button and page title -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="backButton" Margin="39,59,39,0" Command="{Binding NavigationHelper.GoBackCommand, ElementName=pageRoot}"
+                        Style="{StaticResource NavigationBackButtonNormalStyle}"
+                        VerticalAlignment="Top"
+                        AutomationProperties.Name="Back"
+                        AutomationProperties.AutomationId="BackButton"
+                        AutomationProperties.ItemType="Navigation Button"/>
+            <TextBlock x:Name="pageTitle" Text="{StaticResource AppName}" Style="{StaticResource HeaderTextBlockStyle}" Grid.Column="1" 
+                        IsHitTestVisible="false" TextWrapping="NoWrap" VerticalAlignment="Bottom" Margin="0,0,30,40"/>
+        </Grid>
+        <TextBlock Grid.Row="1" Text="Loading..." 
+            Visibility="{Binding ProductsAsync.IsNotCompleted, Converter={StaticResource BoolToVisConverter}}"
+            Style="{StaticResource HeaderTextBlockStyle}" VerticalAlignment="Center" HorizontalAlignment="Center"
+            />
+        <!-- Horizontal scrolling grid -->
+        <GridView
+            x:Name="productsGridView"
+            AutomationProperties.AutomationId="ItemsGridView"
+            AutomationProperties.Name="Items"
+            TabIndex="1"
+            Grid.RowSpan="2"
+            Padding="116,136,116,46"
+            ItemsSource="{Binding Source={StaticResource itemsViewSource}}"
+            SelectionMode="None"
+            IsItemClickEnabled="True"
+            Visibility="{Binding ProductsAsync.IsSuccessfullyCompleted, Converter={StaticResource BoolToVisConverter}}"
+            IsSwipeEnabled="false" d:IsHidden="True">
+            <GridView.ItemTemplate>
+                <DataTemplate>
+                    <Grid HorizontalAlignment="Left" Width="250" Height="250">
+                        <Border Background="{ThemeResource ListViewItemPlaceholderBackgroundThemeBrush}">
+                            <Image Source="{Binding RelativeSource={RelativeSource Mode=None}, Converter={StaticResource BytesToImageConverter}}" Stretch="UniformToFill" AutomationProperties.Name="{Binding Name}"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Bottom" Background="{ThemeResource ListViewItemOverlayBackgroundThemeBrush}">
+                            <TextBlock Text="{Binding Name}" Foreground="{ThemeResource ListViewItemOverlayForegroundThemeBrush}" Style="{StaticResource BaseTextBlockStyle}" Height="60" Margin="15,0,15,0" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Price}" Foreground="{ThemeResource ListViewItemOverlaySecondaryForegroundThemeBrush}" Style="{StaticResource BaseTextBlockStyle}" TextWrapping="NoWrap" Margin="15,0,15,10" FontSize="12"/>
+                            <Button Content="Details" CommandParameter="{Binding}" Command="{Binding GotoDetailsPageCommand, Source={Binding ProductViewModel, Source={StaticResource viewModelLocator}}}" ></Button>
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
+    </Grid>
+</Page>
