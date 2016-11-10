@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using NLog;
 
@@ -11,11 +10,12 @@ namespace Products.WebApi.Logging
     public class MessageLoggingHandler : MessageHandler
     {
         private readonly ILogger _logger;
-        private Regex _regex;
+        private readonly Regex _regex;
 
         public MessageLoggingHandler(ILogger logger)
         {
             _logger = logger;
+            // regex init to use it for replacing "PhotoData":"[byte array]", substring
             _regex = new Regex("\"PhotoData\":\".*\",");
         }
 
@@ -28,11 +28,11 @@ namespace Products.WebApi.Logging
         /// <returns>task handle for logging operation</returns>
         protected override async Task IncommingMessageAsync(string correlationId, string requestInfo, string message)
         {
-            var mes = _regex.Replace(message, "");
+            var logMessage = PrepareMessageForLogging(message);
             await Task.Run(() =>
-                _logger.Log(LogLevel.Info, $"{correlationId} - Request: {requestInfo}\r\n{mes}"));
+                _logger.Log(LogLevel.Info, $"{correlationId} - Request: {requestInfo}\r\n{logMessage}"));
         }
-
+       
         /// <summary>
         /// Logs outgoing response message
         /// </summary>
@@ -42,9 +42,20 @@ namespace Products.WebApi.Logging
         /// <returns>task handle for logging operation</returns>
         protected override async Task OutgoingMessageAsync(string correlationId, string requestInfo, string message)
         {
-            var mes = _regex.Replace(message, "");
+            var logMessage = PrepareMessageForLogging(message);
             await Task.Run(() =>
-                _logger.Log(LogLevel.Info, $"{correlationId} - Response: {requestInfo}\r\n{mes}"));
+                _logger.Log(LogLevel.Info, $"{correlationId} - Response: {requestInfo}\r\n{logMessage}"));
+        }
+
+        /// <summary>
+        /// Prepares log message.
+        /// Removes photo data bytes from message
+        /// </summary>
+        /// <param name="message">request message</param>
+        /// <returns></returns>
+        private string PrepareMessageForLogging(string message)
+        {
+            return _regex.Replace(message, "");
         }
     }
 }

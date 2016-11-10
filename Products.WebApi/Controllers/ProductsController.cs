@@ -1,12 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Data.Entity.Infrastructure;
-using System.Linq;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
-using Products.WebApi.Interfaces;
-using Products.WebApi.Models;
+using NLog;
+using Products.WebApi.BL.Interfaces;
+using Products.WebApi.DAL.Models;
 using WebApi.OutputCache.V2;
 
 namespace Products.WebApi.Controllers
@@ -14,18 +14,20 @@ namespace Products.WebApi.Controllers
     [AutoInvalidateCacheOutput]
     public class ProductsController : ApiController
     {
-        private readonly IRepository<Product> _repository;
+        private readonly IProductService _productService;
+        private readonly ILogger _logger;
 
-        public ProductsController(IRepository<Product> repository)
+        public ProductsController( IProductService productService, ILogger logger)
         {
-            _repository = repository;
+            _productService = productService;
+            _logger = logger;
         }
 
         // GET: api/Products
         [CacheOutput(ClientTimeSpan = 3600, ServerTimeSpan = 3600)]
         public async Task<IEnumerable<Product>> GetProducts()
         {
-            return await _repository.GetAsync(orderBy: q => q.OrderBy(d => d.Name));
+            return await _productService.GetOrderedProducts();
         }
 
         // GET: api/Products/5
@@ -33,7 +35,7 @@ namespace Products.WebApi.Controllers
         [CacheOutput(ClientTimeSpan = 3600, ServerTimeSpan = 3600)]
         public async Task<IHttpActionResult> GetProduct(int id)
         {
-            Product product = await _repository.GetByIdAsync(id);
+            Product product = await _productService.GetProduct(id);
             if (product == null)
             {
                 return NotFound();
@@ -51,24 +53,22 @@ namespace Products.WebApi.Controllers
                 return BadRequest(ModelState);
             }
 
-            if (id != product.ID)
+            if (id != product.Id)
             {
                 return BadRequest();
             }
 
-            _repository.Update(product);
-
             try
             {
-                await _repository.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await ProductExists(id))
+                if (!await _productService.PutProduct(id, product))
                 {
                     return NotFound();
                 }
-                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Put product error: {ex.Message}");
+                return InternalServerError(ex);
             }
 
             return StatusCode(HttpStatusCode.NoContent);
@@ -83,24 +83,20 @@ namespace Products.WebApi.Controllers
                 return BadRequest(ModelState);
             }
 
-            _repository.Add(product);
-            await _repository.SaveChangesAsync();
+            await _productService.PostProduct(product);
 
-            return CreatedAtRoute("DefaultApi", new { id = product.ID }, product);
+            return CreatedAtRoute("DefaultApi", new { id = product.Id }, product);
         }
 
         // DELETE: api/Products/5
         [ResponseType(typeof(Product))]
         public async Task<IHttpActionResult> DeleteProduct(int id)
         {
-            Product product = await _repository.GetByIdAsync(id);
+            var product = await _productService.DeleteProduct(id);
             if (product == null)
             {
                 return NotFound();
             }
-
-            _repository.Delete(product);
-            await _repository.SaveChangesAsync();
 
             return Ok(product);
         }
@@ -109,15 +105,9 @@ namespace Products.WebApi.Controllers
         {
             if (disposing)
             {
-                _repository.Dispose();
+                _productService?.Dispose();
             }
             base.Dispose(disposing);
-        }
-
-        private async Task<bool> ProductExists(int id)
-        {
-            var products = await _repository.GetAsync(x => x.ID == id);
-            return products.Any();
         }
     }
 }

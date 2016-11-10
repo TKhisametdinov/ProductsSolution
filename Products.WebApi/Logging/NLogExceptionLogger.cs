@@ -48,10 +48,7 @@ namespace Products.WebApi.Logging
             if (context.Exception != null)
             {
                 message.Append(" msg: ").Append(context.Exception.Message);
-                if (context.Exception.Message.Contains("See the InnerException for details"))
-                {
-                    message.Append(" inner: ").Append(context.Exception.InnerException?.Message);
-                }
+                message.Append(" inner: ").Append(context.Exception.InnerException?.Message);
             }
 
             return message.ToString();

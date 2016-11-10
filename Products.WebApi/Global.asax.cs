@@ -15,11 +15,11 @@ namespace Products.WebApi
         protected void Application_Start()
         {
             _container = IoC.BootstrapContainer();
+            ProductContextInitializationHandler.Initialize();
 
             GlobalConfiguration.Configure(WebApiConfig.Register);
             AreaRegistration.RegisterAllAreas();
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
-            BundleConfig.RegisterBundles(BundleTable.Bundles);
 
             GlobalConfiguration.Configuration.DependencyResolver = new WindsorDependencyResolver(_container.Kernel);
 

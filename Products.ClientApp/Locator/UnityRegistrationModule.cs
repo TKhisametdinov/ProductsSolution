@@ -31,7 +31,7 @@ namespace Products.ClientApp.Locator
 
             // TODO: move http://localhost/Products.WebApi to config
             container.RegisterType<IProductApiUrlProvider, ProductsApiUrlProvider>(
-                new InjectionConstructor("http://localhost/Products.WebApi"));
+                new InjectionConstructor("http://localhost:48774"));
         }
     }
 }
